@@ -18,10 +18,10 @@ theme_set(theme_bw(base_size = 15))
 ```
 
 ```{r mlb-data, include = F}
-devtools::install_github("beanumber/openWAR")
-
 p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr)
 
 #browseURL("https://tht.fangraphs.com/author/billpetti/")
+
+#browseURL("https://billpetti.github.io/baseballr/")
 ```
 
