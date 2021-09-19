@@ -23,5 +23,32 @@ p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr)
 #browseURL("https://tht.fangraphs.com/author/billpetti/")
 
 #browseURL("https://billpetti.github.io/baseballr/")
+
+betts_id <- playerid_lookup("Betts") %>%
+  filter(first_name == "Mookie") %>%
+  select(mlbam_id, first_name, last_name)
+
+oneill_id <- playerid_lookup("Neill") %>% 
+  filter(first_name == "Tyler") %>% 
+  select(mlbam_id, first_name, last_name)
+```
+
+## Tyler O'Neill
+
+```{r, include = F}
+oneill_2021 <- scrape_statcast_savant(start_date = "2021-03-31", end_date = Sys.Date()-1,
+                                      playerid = oneill_id[1, 1], player_type = "batter")
+
+skim(oneill_2021)
+```
+
+```{r}
+oneill_2021 %>% 
+  group_by(game_date) %>% 
+  select(launch_speed) %>% 
+  summarize_all(mean, na.rm = T) %>% 
+  ggplot(aes(game_date, launch_speed)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = F)
 ```
 
