@@ -31,6 +31,23 @@ betts_id <- playerid_lookup("Betts") %>%
 oneill_id <- playerid_lookup("Neill") %>% 
   filter(first_name == "Tyler") %>% 
   select(mlbam_id, first_name, last_name)
+
+goldy_id <- playerid_lookup("Goldsch") %>% 
+  filter(first_name == "Paul") %>% 
+  select(mlbam_id, first_name, last_name)
+
+hit_sum <- function(df){
+  df  %>% 
+  filter(!is.na({{events}})) %>% 
+  group_by({{game_date}}) %>% 
+  mutate(hits = sum({{events}} %in% c("single", "double", "triple", "home_run")),
+         pa = sum(!is.na({{events}} == T)),
+         ab = pa - sum({{events}} %in% c("hit_by_pitch", "sac_fly", "walk")),
+         game_avg = hits/ab, 3) %>% 
+  ungroup() %>% 
+  mutate(avg = round(cummean(game_avg), 3))
+  arrange({{game_date}})
+}
 ```
 
 ## Tyler O'Neill
@@ -50,5 +67,34 @@ oneill_2021 %>%
   ggplot(aes(game_date, launch_speed)) + 
   geom_point() + 
   geom_smooth(method = "lm", se = F)
+```
+
+```{r}
+sum_oneill <- oneill_2021 %>% 
+  filter(!is.na(events)) %>% 
+  group_by(game_date) %>% 
+  mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
+         pa = sum(!is.na(events == T)),
+         ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
+         game_avg = round(hits/ab, 3)) %>% 
+  ungroup() %>% 
+  mutate(avg = cummean(game_avg))
+  arrange(game_date)
+  
+sum_oneill2 <- hit_sum(oneill_2021)
+```
+
+```{r}
+sum_oneill %>% 
+  ggplot(aes(game_date, avg)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = F) +
+  lims(y = c(.200, .400))
+```
+
+# Paul Goldschmidt
+
+```{r}
+
 ```
 
