@@ -18,7 +18,7 @@ theme_set(theme_bw(base_size = 15))
 ```
 
 ```{r mlb-data, include = F}
-p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr)
+p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr, teamcolors)
 
 #browseURL("https://tht.fangraphs.com/author/billpetti/")
 
@@ -38,7 +38,7 @@ goldy_id <- playerid_lookup("Goldsch") %>%
 
 hit_sum <- function(df){
   df  %>% 
-  select(game_date, events) %>% 
+  select(game_date, events, home_team, away_team) %>% 
   filter(!is.na(events)) %>% 
   group_by(game_date) %>%
   mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
