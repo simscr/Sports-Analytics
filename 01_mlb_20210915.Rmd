@@ -24,9 +24,9 @@ p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr)
 
 #browseURL("https://billpetti.github.io/baseballr/")
 
-betts_id <- playerid_lookup("Betts") %>%
-  filter(first_name == "Mookie") %>%
-  select(mlbam_id, first_name, last_name)
+# betts_id <- playerid_lookup("Betts") %>%
+#   filter(first_name == "Mookie") %>%
+#   select(mlbam_id, first_name, last_name)
 
 oneill_id <- playerid_lookup("Neill") %>% 
   filter(first_name == "Tyler") %>% 
@@ -38,16 +38,19 @@ goldy_id <- playerid_lookup("Goldsch") %>%
 
 hit_sum <- function(df){
   df  %>% 
-  filter(!is.na({{events}})) %>% 
-  group_by({{game_date}}) %>% 
-  mutate(hits = sum({{events}} %in% c("single", "double", "triple", "home_run")),
-         pa = sum(!is.na({{events}} == T)),
-         ab = pa - sum({{events}} %in% c("hit_by_pitch", "sac_fly", "walk")),
-         game_avg = hits/ab, 3) %>% 
+  select(game_date, events) %>% 
+  filter(!is.na(events)) %>% 
+  group_by(game_date) %>%
+  mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
+         pa = sum(!is.na(events == T)),
+         ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
+         game_avg = hits/ab) %>% 
   ungroup() %>% 
-  mutate(avg = round(cummean(game_avg), 3))
-  arrange({{game_date}})
+  arrange(game_date) %>% 
+  group_by(isna = is.na(game_avg)) %>% 
+  mutate(avg = ifelse(isna, NA, round(cummean(game_avg), 3)))
 }
+
 ```
 
 ## Tyler O'Neill
@@ -78,23 +81,32 @@ sum_oneill <- oneill_2021 %>%
          ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
          game_avg = round(hits/ab, 3)) %>% 
   ungroup() %>% 
+  arrange(game_date) %>% 
   mutate(avg = cummean(game_avg))
-  arrange(game_date)
   
-sum_oneill2 <- hit_sum(oneill_2021)
+
 ```
 
 ```{r}
 sum_oneill %>% 
   ggplot(aes(game_date, avg)) + 
   geom_point() + 
-  geom_smooth(method = "lm", se = F) +
-  lims(y = c(.200, .400))
+  geom_smooth(method = "loess", se = F) +
+  lims(y = c(.100, .400))
 ```
 
 # Paul Goldschmidt
 
 ```{r}
+goldy_2021 <- scrape_statcast_savant(start_date = "2021-03-31", end_date = Sys.Date()-1,
+                                      playerid = goldy_id[1, 1], player_type = "batter")
 
+goldy_sum <- hit_sum(goldy_2021)
+
+goldy_sum %>% 
+  ggplot(aes(game_date, avg)) + 
+  geom_point() + 
+  geom_smooth(method = "loess", se = F) +
+  lims(y = c(.100, .400))
 ```
 
