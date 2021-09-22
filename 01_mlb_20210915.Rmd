@@ -18,7 +18,7 @@ theme_set(theme_bw(base_size = 15))
 ```
 
 ```{r mlb-data, include = F}
-p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr, teamcolors)
+p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr, teamcolors, zoo)
 
 #browseURL("https://tht.fangraphs.com/author/billpetti/")
 
@@ -38,18 +38,59 @@ goldy_id <- playerid_lookup("Goldsch") %>%
 
 hit_sum <- function(df){
   df  %>% 
-  select(game_date, events, home_team, away_team) %>% 
-  filter(!is.na(events)) %>% 
-  group_by(game_date) %>%
-  mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
-         pa = sum(!is.na(events == T)),
-         ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
-         game_avg = hits/ab) %>% 
-  ungroup() %>% 
-  arrange(game_date) %>% 
-  group_by(isna = is.na(game_avg)) %>% 
-  mutate(avg = ifelse(isna, NA, round(cummean(game_avg), 3)))
+    select(game_date, events, home_team, away_team) %>% 
+    filter(!is.na(events)) %>% 
+    group_by(game_date) %>%
+    mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
+           pa = sum(!is.na(events == T)),
+           ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
+           game_avg = hits/ab) %>% 
+    ungroup() %>% 
+    arrange(game_date) %>% 
+    group_by(isna = is.na(game_avg)) %>% 
+    mutate(avg = ifelse(isna, NA, round(cummean(game_avg), 3))) %>% 
+#    group_by(game_date) %>% 
+    mutate(avg_25_ab = rollmean(avg, k = 25, fill = NA))
 }
+
+# sum_oneill <- hit_sum(oneill_2021)
+
+mlb_colors <- teamcolors %>% 
+  select(name, league, primary, secondary, tertiary, quaternary) %>% 
+  filter(league == "mlb") %>% 
+  mutate(team_abbr = case_when(name == "Arizona Diamondbacks" ~ "AZ",
+                                 name == "Atlanta Braves" ~ "ATL",
+                                 name == "Baltimore Orioles" ~ "BAL",
+                                 name == "Boston Red Sox" ~ "BOS",
+                                 name == "Chicago Cubs" ~ "CHC",
+                                 name == "Chicago White Sox" ~ "CWS",
+                                 name == "Cincinnati Reds" ~ "CIN",
+                                 name == "Cleveland Indians" ~ "CLE",
+                                 name == "Colorado Rockies" ~ "COL",
+                                 name == "Detroit Tigers" ~ "DET",
+                                 name == "Houston Astros" ~ "HOU",
+                                 name == "Kansas City Royals" ~ "KC",
+                                 name == "Los Angeles Angels" ~ "LAA",
+                                 name == "Los Angeles Dodgers" ~ "LAD",
+                                 name == "Miami Marlins" ~ "MIA",
+                                 name == "Milwaukee Brewers" ~ "MIL",
+                                 name == "Minnesota Twins" ~ "MIN",
+                                 name == "New York Mets" ~ "NYM",
+                                 name == "New York Yankees" ~ "NYY",
+                                 name == "Oakland Athletics" ~ "OAK",
+                                 name == "Philadelphia Phillies" ~ "PHI",
+                                 name == "Pittsburgh Pirates" ~ "PIT",
+                                 name == "San Diego Padres" ~ "SD",
+                                 name == "San Francisco Giants" ~ "SF",
+                                 name == "Seattle Mariners" ~ "SEA",
+                                 name == "St. Louis Cardinals" ~ "STL",
+                                 name == "Tampa Bay Rays" ~ "TB",
+                                 name == "Texas Rangers" ~ "TEX",
+                                 name == "Toronto Blue Jays" ~ "TOR",
+                                 name == "Washington Nationals" ~ "WSH")
+         )
+
+
 
 ```
 
@@ -73,25 +114,15 @@ oneill_2021 %>%
 ```
 
 ```{r}
-sum_oneill <- oneill_2021 %>% 
-  filter(!is.na(events)) %>% 
-  group_by(game_date) %>% 
-  mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
-         pa = sum(!is.na(events == T)),
-         ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
-         game_avg = round(hits/ab, 3)) %>% 
-  ungroup() %>% 
-  arrange(game_date) %>% 
-  mutate(avg = cummean(game_avg))
-  
-
+sum_oneill <- hit_sum(oneill_2021)
 ```
 
 ```{r}
 sum_oneill %>% 
   ggplot(aes(game_date, avg)) + 
   geom_point() + 
-  geom_smooth(method = "loess", se = F) +
+#  geom_smooth(method = "loess", se = F) +
+  geom_line(aes(x = game_date, y = avg_25_ab), color = "blue") +
   lims(y = c(.100, .400))
 ```
 
@@ -105,8 +136,9 @@ goldy_sum <- hit_sum(goldy_2021)
 
 goldy_sum %>% 
   ggplot(aes(game_date, avg)) + 
-  geom_point() + 
-  geom_smooth(method = "loess", se = F) +
+  geom_jitter(color = "#c41e3a") + 
+#  geom_smooth(method = "loess", se = F) +
+  geom_line(aes(x = game_date, y = avg_25_ab), color = "#fedb00") +
   lims(y = c(.100, .400))
 ```
 
