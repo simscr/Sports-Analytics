@@ -1,0 +1,41 @@
+---
+title: "Soccer Data"
+author: "CS"
+date: "9/15/2021"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  fig.retina = 3,
+  fig.path = here::here("exports", "soccer", "Plots", "/")
+)
+pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr)
+theme_set(theme_bw(base_size = 15))
+```
+
+```{r, include = F}
+
+# browseURL("https://ryo-n7.github.io/2019-08-21-visualize-soccer-statsbomb-part-1/")
+# browseURL("https://github.com/JoGall/soccermatics")
+
+p_load(StatsBombR, SBpitch, soccermatics)
+
+comps <- FreeCompetitions()
+
+laliga_2020 <- comps %>% 
+  filter(competition_id == 11, season_id == 42) %>% 
+  FreeMatches()
+
+barca_raw <-  StatsBombFreeEvents(MatchesDF = laliga_2020)
+```
+
+```{r}
+barca_raw %>% 
+  filter(!is.na(pass.angle)) %>% 
+  ggplot(aes())
+```
+

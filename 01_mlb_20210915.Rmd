@@ -136,9 +136,32 @@ goldy_sum <- hit_sum(goldy_2021)
 
 goldy_sum %>% 
   ggplot(aes(game_date, avg)) + 
-  geom_jitter(color = "#c41e3a") + 
 #  geom_smooth(method = "loess", se = F) +
-  geom_line(aes(x = game_date, y = avg_25_ab), color = "#fedb00") +
-  lims(y = c(.100, .400))
+  geom_line(aes(x = game_date, y = avg_25_ab), color = "#fedb00", size = 1.5) +
+  geom_point(color = "#c41e3a", shape = 1, alpha = 0.75) + 
+  lims(y = c(.200, .400)) + 
+  labs(x = NULL, y = "Batting Average with Rolling Average over 25 AB", 
+       title = "Paul Goldschmidt", subtitle = "St. Louis Cardinals - 2021")
+```
+
+# Shohei Ohtani
+
+```{r}
+ohtani_id <- playerid_lookup("Ohtani") %>% 
+  filter(first_name == "Shohei") %>% 
+  pull(mlbam_id)
+
+ohtani_raw <- scrape_statcast_savant(start_date = "2021-03-31", end_date = Sys.Date()-1,
+                                      playerid = ohtani_id, player_type = "batter")
+
+ohtani_2021 <- ohtani_raw %>% 
+  arrange(game_date) %>% 
+  hit_sum(.)
+
+
+ohtani_2021 %>% 
+  ggplot(aes(game_date, avg_25_ab)) + 
+  geom_line()
+
 ```
 
