@@ -31,11 +31,70 @@ laliga_2020 <- comps %>%
   FreeMatches()
 
 barca_raw <-  StatsBombFreeEvents(MatchesDF = laliga_2020)
+
+barca_sum <- barca_raw %>%
+  mutate(angle.round = round(pass.angle*180/pi/15)*15)
+
+barca_sonar <- barca_sum %>% 
+  filter(type.name == "Pass", 
+         !play_pattern.name %in% c("From Corner", "From Free Kick", "From Throw In")) %>%
+  group_by(player.name, team.name) %>%
+  mutate(N = n()) %>%
+  ungroup() %>%
+  group_by(player.name, team.name, angle.round) %>%
+  mutate(n.angle = n()/N) %>%
+  ungroup() %>%
+  group_by(player.name, team.name) %>%
+  mutate(maxN = max(n.angle),
+         angle.norm = n.angle/maxN) %>%
+  ungroup()%>%
+  group_by(angle.round, player.name, team.name,N) %>%
+  summarize(angle.norm = mean(angle.norm),
+            distance = mean(pass.length),
+            distance = ifelse(distance>30, 30,distance))
 ```
 
 ```{r}
 barca_raw %>% 
   filter(!is.na(pass.angle)) %>% 
-  ggplot(aes())
+  filter(possession_team.name == "Barcelona") %>% 
+  ggplot(aes(pass.angle)) + 
+  geom_density() + 
+  lims(x = c(-pi, pi)) +
+  coord_polar(start = pi)
+```
+
+
+```{r, include = F, eval = F}
+# browseURL("https://github.com/etmckinley/PassSonar/blob/master/StatsBomb%20PassSonars.R")
+
+barca_sum %>% 
+  filter(!is.na(pass.angle)) %>% 
+  filter(possession_team.name == "Barcelona") %>% 
+  ggplot(aes(angle_round, fill = pass.length)) + 
+  geom_histogram(bins = 50, color = "black")
+
++ 
+  lims(x = c(-pi, pi))
+
++
+  coord_polar(start = pi)
+```
+
+```{r}
+barca_sonar %>% 
+  filter(str_detect(player.name, "Messi")) %>% 
+  ggplot() +
+  geom_bar(aes(x=angle.round, y=angle.norm, fill=distance), stat="identity")+
+  scale_y_continuous(limits=c(0,1))+
+  scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
+  coord_polar(start=pi, direction=1)+
+ # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+  labs(x='', y='',title= "Messi")+
+  theme_void()+
+  theme(plot.title = element_text(hjust=0.5),
+        #legend.position = "none", #uncomment to remove colorbar
+        plot.background = element_rect(fill = "transparent",colour = NA),
+        panel.background = element_rect(fill = "transparent",colour = NA))
 ```
 
