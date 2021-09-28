@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
   fig.retina = 3,
   fig.path = here::here("exports", "soccer", "Plots", "/")
 )
-pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr)
+pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr, patchwork)
 theme_set(theme_bw(base_size = 15))
 ```
 
@@ -32,29 +32,35 @@ laliga_2020 <- comps %>%
 
 barca_raw <-  StatsBombFreeEvents(MatchesDF = laliga_2020)
 
+round_angle <- 30
+
 barca_sum <- barca_raw %>%
-  mutate(angle.round = round(pass.angle*180/pi/15)*15)
+  mutate(angle.round = round(pass.angle*180/pi/round_angle)*round_angle, .before = id,
+         pass_angle = pass.angle)
 
 barca_sonar <- barca_sum %>% 
-  filter(type.name == "Pass", 
-         !play_pattern.name %in% c("From Corner", "From Free Kick", "From Throw In")) %>%
-  group_by(player.name, team.name) %>%
-  mutate(N = n()) %>%
+  filter(team.name == "Barcelona") %>% 
+  filter(type.name == "Pass", # passes only
+         !play_pattern.name %in% c("From Corner", "From Free Kick", "From Throw In")) %>% # remove deadballs
+  group_by(player.name, team.name) %>% # group by player and team
+  mutate(total_passes = n(), .before = id) %>% # add total passes and put before id
+  ungroup() %>% 
+  group_by(player.name, team.name, angle.round) %>% # group by these
+  mutate(passes_per_angle = n(),
+         pct.angle = (n()/total_passes)*100, .before = total_passes) %>% # add number per angle bracket and percent per angle bracket
   ungroup() %>%
-  group_by(player.name, team.name, angle.round) %>%
-  mutate(n.angle = n()/N) %>%
+  group_by(player.name, team.name) %>% # group by these
+  mutate(maxN = max(passes_per_angle), # pull out maximum n of passes per angle per player
+         angle.norm = passes_per_angle/maxN, .before = total_passes) %>% # calc final number per max number
   ungroup() %>%
-  group_by(player.name, team.name) %>%
-  mutate(maxN = max(n.angle),
-         angle.norm = n.angle/maxN) %>%
-  ungroup()%>%
-  group_by(angle.round, player.name, team.name,N) %>%
-  summarize(angle.norm = mean(angle.norm),
-            distance = mean(pass.length),
-            distance = ifelse(distance>30, 30,distance))
+  group_by(angle.round, player.name, team.name,total_passes) %>%
+  summarize(angle.norm = mean(angle.norm), # calc mean angle
+            pct.angle = mean(pct.angle), # calc mean pct per angle
+            distance = mean(pass.length), # calc mean pass length
+            distance = ifelse(distance>30, 30,distance)) # cap distance at 30m
 ```
 
-```{r}
+```{r, barca-plot-attempt-1}
 barca_raw %>% 
   filter(!is.na(pass.angle)) %>% 
   filter(possession_team.name == "Barcelona") %>% 
@@ -71,22 +77,17 @@ barca_raw %>%
 barca_sum %>% 
   filter(!is.na(pass.angle)) %>% 
   filter(possession_team.name == "Barcelona") %>% 
-  ggplot(aes(angle_round, fill = pass.length)) + 
+  ggplot(aes(angle.round, fill = pass.length)) + 
   geom_histogram(bins = 50, color = "black")
 
-+ 
-  lims(x = c(-pi, pi))
-
-+
-  coord_polar(start = pi)
 ```
 
-```{r}
-barca_sonar %>% 
+```{r, messi-sonar-1}
+(messi <- barca_sonar %>% 
   filter(str_detect(player.name, "Messi")) %>% 
   ggplot() +
-  geom_bar(aes(x=angle.round, y=angle.norm, fill=distance), stat="identity")+
-  scale_y_continuous(limits=c(0,1))+
+  geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity")+
+  scale_y_continuous(limits=c(0,25))+
   scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
   coord_polar(start=pi, direction=1)+
  # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
@@ -96,5 +97,54 @@ barca_sonar %>%
         #legend.position = "none", #uncomment to remove colorbar
         plot.background = element_rect(fill = "transparent",colour = NA),
         panel.background = element_rect(fill = "transparent",colour = NA))
+)
+```
+
+```{r, wague-test-1}
+(wague <- barca_sonar %>% 
+  filter(str_detect(player.name, "Wagu")) %>% 
+  ggplot() +
+  geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity")+
+  scale_y_continuous(limits=c(0,25))+
+  scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
+  coord_polar(start=pi, direction=1)+
+ # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+  labs(x='', y='',title= "Wague")+
+  theme_void()+
+  theme(plot.title = element_text(hjust=0.5),
+        #legend.position = "none", #uncomment to remove colorbar
+        plot.background = element_rect(fill = "transparent",colour = NA),
+        panel.background = element_rect(fill = "transparent",colour = NA))
+)
+```
+
+```{r, busquets-test-1}
+(busquets <- barca_sonar %>% 
+  filter(str_detect(player.name, "Busquets")) %>% 
+  ggplot() +
+  geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity")+
+  scale_y_continuous(limits=c(0,25))+
+  scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
+  coord_polar(start=pi, direction=1)+
+ # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+  labs(x='', y='',title= "Busquets")+
+  theme_void()+
+  theme(plot.title = element_text(hjust=0.5),
+        #legend.position = "none", #uncomment to remove colorbar
+        plot.background = element_rect(fill = "transparent",colour = NA),
+        panel.background = element_rect(fill = "transparent",colour = NA))
+)
+```
+
+```{r, combine-test-1}
+messi + wague + busquets + plot_layout(guides = "collect")
+```
+
+```{r, messi-test-2}
+barca_sonar %>% 
+  filter(str_detect(player.name, "Messi")) %>% 
+  ggplot(aes(x=angle.round, y=pct.angle, fill=distance)) + 
+  geom_smooth() +
+  coord_polar(start = pi, direction = 1)
 ```
 
