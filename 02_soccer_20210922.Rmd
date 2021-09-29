@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
   fig.retina = 3,
   fig.path = here::here("exports", "soccer", "Plots", "/")
 )
-pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr, patchwork)
+pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr, patchwork, viridis)
 theme_set(theme_bw(base_size = 15))
 ```
 
@@ -90,7 +90,7 @@ barca_sum %>%
   scale_y_continuous(limits=c(0,25))+
   scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
   coord_polar(start=pi, direction=1)+
- # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+  scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
   labs(x='', y='',title= "Messi")+
   theme_void()+
   theme(plot.title = element_text(hjust=0.5),
@@ -108,7 +108,7 @@ barca_sum %>%
   scale_y_continuous(limits=c(0,25))+
   scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
   coord_polar(start=pi, direction=1)+
- # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+  scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
   labs(x='', y='',title= "Wague")+
   theme_void()+
   theme(plot.title = element_text(hjust=0.5),
@@ -126,7 +126,7 @@ barca_sum %>%
   scale_y_continuous(limits=c(0,25))+
   scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
   coord_polar(start=pi, direction=1)+
- # scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+  scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
   labs(x='', y='',title= "Busquets")+
   theme_void()+
   theme(plot.title = element_text(hjust=0.5),
@@ -144,7 +144,69 @@ messi + wague + busquets + plot_layout(guides = "collect")
 barca_sonar %>% 
   filter(str_detect(player.name, "Messi")) %>% 
   ggplot(aes(x=angle.round, y=pct.angle, fill=distance)) + 
-  geom_smooth() +
+  geom_smooth(method = "gam", formula = y ~ poly(x, 5)) +
   coord_polar(start = pi, direction = 1)
+
+messi_sonar <- barca_sonar %>% 
+  filter(str_detect(player.name, "Messi"))
+
+messi_sonar %>% 
+  ggplot(aes(angle.round, distance)) + 
+  geom_col(width = 3) +
+  coord_polar(start = pi, direction = 1)
+
+messi_sum <- barca_sum %>% 
+  filter(str_detect(player.name, "Messi"))
+
+messi_sum %>% 
+  ggplot(aes(pass_angle, pass.length)) + 
+  geom_hline(yintercept = seq(0, 60, 10), color = "gray") +
+  geom_point(alpha = 0.4) +
+  geom_segment( aes(x=pass_angle, xend=pass_angle, y=0, yend=pass.length), alpha = 0.05) +
+  coord_polar(start = pi, direction = 1) +
+  lims(y = c(-20, 60)) +
+  theme_void() +
+  annotate(x = 0, y = -20, geom = "text", label = "Messi", size = 8)
+```
+
+```{r plotting functions, include = F}
+
+passing_plots <- function(player_name){
+  df1 <- barca_sonar %>% 
+    filter(str_detect(player.name, player_name))
+  
+  sonar_plot <- df1 %>% 
+    ggplot() +
+    geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity")+
+    scale_y_continuous(limits=c(0,25))+
+    scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
+    coord_polar(start=pi, direction=1)+
+    scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
+    labs(x='', y='',title = player_name)+
+    theme_void()+
+    theme(plot.title = element_text(hjust=0.5),
+          #legend.position = "none", #uncomment to remove colorbar
+          plot.background = element_rect(fill = "transparent",colour = NA),
+          panel.background = element_rect(fill = "transparent",colour = NA))
+  
+  df2 <- barca_sum %>% 
+    filter(str_detect(player.name, player_name))
+  
+  point_plot <- df2 %>% 
+    ggplot(aes(pass_angle, pass.length)) + 
+    geom_hline(yintercept = seq(0, 60, 10), color = "gray") +
+    geom_point(alpha = 0.4) +
+    geom_segment( aes(x=pass_angle, xend=pass_angle, y=0, yend=pass.length), alpha = 0.05) +
+    coord_polar(start = pi, direction = 1) +
+    lims(y = c(-20, 60)) +
+    theme_void() +
+    annotate(x = 0, y = -20, geom = "text", label = player_name, size = 8)
+  
+  list(sonar_plot = sonar_plot, point_plot = point_plot)
+}
+
+passing_plots("Fati")
+
+
 ```
 
