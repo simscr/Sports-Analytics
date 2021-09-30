@@ -36,7 +36,9 @@ round_angle <- 30
 
 barca_sum <- barca_raw %>%
   mutate(angle.round = round(pass.angle*180/pi/round_angle)*round_angle, .before = id,
-         pass_angle = pass.angle)
+         pass_angle = pass.angle,
+         pass_length = case_when(pass.length >= 30 ~ 30,
+                                 TRUE ~ pass.length))
 
 barca_sonar <- barca_sum %>% 
   filter(team.name == "Barcelona") %>% 
@@ -169,7 +171,7 @@ messi_sum %>%
   annotate(x = 0, y = -20, geom = "text", label = "Messi", size = 8)
 ```
 
-```{r plotting functions, include = F}
+```{r plotting functions-v1, include = F}
 
 passing_plots <- function(player_name){
   df1 <- barca_sonar %>% 
@@ -177,32 +179,41 @@ passing_plots <- function(player_name){
   
   sonar_plot <- df1 %>% 
     ggplot() +
-    geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity")+
-    scale_y_continuous(limits=c(0,25))+
-    scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180))+
-    coord_polar(start=pi, direction=1)+
-    scale_fill_viridis("Distance (yards)", limits=c(0,30), na.value="#FDE725FF")+
-    labs(x='', y='',title = player_name)+
-    theme_void()+
+    geom_hline(yintercept = seq(0, 30, 5), color = "gray") +
+    annotate(geom = "text", x = 0, y = seq(0, 30, 5), label = seq(0, 30, 5), color = "gray") + 
+    geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity") +
+    scale_y_continuous(limits=c(-10, 30)) +
+    scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180)) +
+    coord_polar(start=pi, direction=1) +
+    scale_fill_gradient("Distance (yards)", 
+                        high = "#DB0030",
+                        low = "#FFED02") +
+    labs(x='', y='')+
+    theme_void() +
     theme(plot.title = element_text(hjust=0.5),
-          #legend.position = "none", #uncomment to remove colorbar
+          legend.position = "none", #uncomment to remove colorbar
           plot.background = element_rect(fill = "transparent",colour = NA),
-          panel.background = element_rect(fill = "transparent",colour = NA))
+          panel.background = element_rect(fill = "transparent",colour = NA)) +
+    annotate(x = 0, y = -10, geom = "text", label = player_name, size = 8, color = "#004D98")
+
   
   df2 <- barca_sum %>% 
     filter(str_detect(player.name, player_name))
   
   point_plot <- df2 %>% 
-    ggplot(aes(pass_angle, pass.length)) + 
-    geom_hline(yintercept = seq(0, 60, 10), color = "gray") +
-    geom_point(alpha = 0.4) +
-    geom_segment( aes(x=pass_angle, xend=pass_angle, y=0, yend=pass.length), alpha = 0.05) +
+    ggplot(aes(pass_angle, pass_length)) + 
+    geom_hline(yintercept = seq(0, 30, 5), color = "gray") +
+    annotate(geom = "text", x = 0, y = seq(0, 30, 5), label = seq(0, 30, 5), color = "gray") + 
+    geom_point(alpha = 0.8, fill = "#004D98", shape = 21, color = "white") +
+    geom_segment( aes(x=pass_angle, xend=pass_angle, y=0, yend=pass_length), alpha = 0.05, color = "#004D98") +
     coord_polar(start = pi, direction = 1) +
-    lims(y = c(-20, 60)) +
+    lims(y = c(-10, 30)) +
     theme_void() +
-    annotate(x = 0, y = -20, geom = "text", label = player_name, size = 8)
+    annotate(x = 0, y = -10, geom = "text", label = player_name, size = 8, color = "#004D98")
   
   list(sonar_plot = sonar_plot, point_plot = point_plot)
+  
+  sonar_plot + point_plot
 }
 
 passing_plots("Fati")
@@ -210,3 +221,55 @@ passing_plots("Fati")
 
 ```
 
+```{r plotting functions-v2, include = F}
+
+passing_plots_v2 <- function(player_name){
+  df1 <- barca_sonar %>% 
+    filter(str_detect(player.name, player_name))
+  
+  sonar_plot <- df1 %>% 
+    ggplot() +
+    geom_hline(yintercept = seq(0, 30, 5), color = "gray") +
+    annotate(geom = "text", x = 0, y = seq(0, 30, 5), label = seq(0, 30, 5), color = "gray") + 
+    geom_bar(aes(x=angle.round, y=pct.angle, fill=distance), stat="identity") +
+#    scale_y_continuous(limits=c(-10, 30)) +
+    scale_x_continuous(breaks=seq(-180,180, by=90), limits=c(-180,180)) +
+    coord_polar(start=pi, direction=1) +
+    scale_fill_gradient("Distance (yards)", 
+                        high = "#DB0030",
+                        low = "#FFED02") +
+    labs(x='', y='')+
+    theme_void() +
+    theme(plot.title = element_text(hjust=0.5),
+          legend.position = "none", #uncomment to remove colorbar
+          plot.background = element_rect(fill = "transparent",colour = NA),
+          panel.background = element_rect(fill = "transparent",colour = NA))
+
+  
+  df2 <- barca_sum %>% 
+    filter(str_detect(player.name, player_name))
+  
+  point_plot <- df2 %>% 
+    ggplot(aes(pass_angle, pass_length)) + 
+    geom_hline(yintercept = seq(0, 30, 5), color = "gray") +
+    annotate(geom = "text", x = 0, y = seq(0, 30, 5), label = seq(0, 30, 5), color = "gray") + 
+    geom_point(alpha = 0.8, fill = "#004D98", shape = 21, color = "white") +
+    geom_segment( aes(x=pass_angle, xend=pass_angle, y=0, yend=pass_length), alpha = 0.05, color = "#004D98") +
+    coord_polar(start = pi, direction = 1) +
+#    lims(y = c(-10, 30)) +
+    theme_void()
+  
+  list(sonar_plot = sonar_plot, point_plot = point_plot)
+  
+  sonar_plot + point_plot + 
+    plot_annotation(title = player_name,
+                    subtitle = "Barcelona, 2019-2020",
+                    caption = "Data provide by StatsBomb")
+}
+
+passing_plots_v2("Frenkie de Jong")
+
+passing_plots_v2("Umtiti")
+
+
+```
