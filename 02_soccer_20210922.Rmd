@@ -30,7 +30,8 @@ laliga_2020 <- comps %>%
   filter(competition_id == 11, season_id == 42) %>% 
   FreeMatches()
 
-barca_raw <-  StatsBombFreeEvents(MatchesDF = laliga_2020)
+barca_raw <-  StatsBombFreeEvents(MatchesDF = laliga_2020) %>% 
+  allclean()
 
 round_angle <- 30
 
@@ -259,17 +260,42 @@ passing_plots_v2 <- function(player_name){
 #    lims(y = c(-10, 30)) +
     theme_void()
   
-  list(sonar_plot = sonar_plot, point_plot = point_plot)
-  
-  sonar_plot + point_plot + 
+  comb_plot <- sonar_plot + point_plot + 
     plot_annotation(title = player_name,
                     subtitle = "Barcelona, 2019-2020",
-                    caption = "Data provide by StatsBomb")
+                    caption = "Data provided by StatsBomb")
+  
+  # return(list(sonar_plot = sonar_plot, 
+  #             point_plot = point_plot + labs(title = player_name), 
+  #             comb_plot = comb_plot))
+  
+  return(point_plot + labs(title = player_name))
+
 }
 
-passing_plots_v2("Frenkie de Jong")
+passing_plots_v2("Frenkie de Jong")$sonar_plot
 
-passing_plots_v2("Umtiti")
+passing_plots_v2("Umtiti")$point_plot
 
 
 ```
+
+```{r, positions}
+
+formation <- "
+##1##
+1###1
+#1#1#
+##1##
+11#11
+##1##
+"
+
+players <- rev(c(barca_raw[[24]][[1]]$player.name))
+
+point_plots <- lapply(players, passing_plots_v2)
+
+paste0(point_plots, collapse = "+") + plot_layout(design = formation)
+
+```
+
