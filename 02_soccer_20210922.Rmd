@@ -282,20 +282,26 @@ passing_plots_v2("Umtiti")$point_plot
 
 ```{r, positions}
 
-formation <- "
-##1##
-1###1
-#1#1#
-##1##
-11#11
-##1##
-"
+formation <- c(
+  area(1, 3),  # ST
+  area(2, 1),  # LW
+  area(2, 5),  # RW
+  area(3, 2),  # LCM
+  area(3, 4),  # RCM
+  area(4, 3),  # CDM
+  area(5, 1),  # LB
+  area(5, 2),  # LCB
+  area(5, 4),  # RCB
+  area(5, 5),  # RB
+  area(6, 3)  # GK
+)
 
-players <- rev(c(barca_raw[[24]][[1]]$player.name))
+players <- rev(c(barca_raw[[24]][[46650]]$player.name))
 
-point_plots <- lapply(players, passing_plots_v2)
+point_plots <- list(map(players, ~passing_plots_v2(.))) %>% 
+  unlist(recursive = F) %>% 
+  set_names(players)
 
-paste0(point_plots, collapse = "+") + plot_layout(design = formation)
-
+wrap_plots(point_plots) + plot_layout(design = formation)
 ```
 
