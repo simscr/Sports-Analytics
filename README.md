@@ -9,6 +9,7 @@ I would like to get more familiar with MLB and Global Soccer/Football Data.
 2. Plot soccer passing as a polar geom_density plot.
 3. PCA based on AB results and Pitch Type.
 4. Soccer passing radar with ggperiodic.
+5. Shot locations in goal.
 
 
 
