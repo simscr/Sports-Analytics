@@ -1,0 +1,258 @@
+---
+title: "MLB Data #2"
+author: "CS"
+date: "10/4/2021"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  fig.retina = 3,
+  fig.path = here::here("exports", "MLB", "Plots", "/"),
+  out.width = "100%"
+)
+pacman::p_load(ggpubr, pacman, tidyverse, janitor, here, rio, job, skimr, paletteer, broom)
+
+theme_set(theme_bw(base_size = 15))
+```
+
+```{r mlb-data, include = F}
+p_load(Lahman, pitchRx, retrosheet, openWAR, baseballr, teamcolors, zoo)
+
+#browseURL("https://tht.fangraphs.com/author/billpetti/")
+
+#browseURL("https://billpetti.github.io/baseballr/")
+
+
+trout_id <- playerid_lookup("Trout") %>% 
+  filter(first_name == "Mike") %>% 
+  select(mlbam_id, first_name, last_name)
+
+
+
+hit_sum <- function(df){
+  df  %>% 
+    select(game_date, events, home_team, away_team) %>% 
+    filter(!is.na(events)) %>% 
+    group_by(game_date) %>%
+    mutate(hits = sum(events %in% c("single", "double", "triple", "home_run")),
+           pa = sum(!is.na(events == T)),
+           ab = pa - sum(events %in% c("hit_by_pitch", "sac_fly", "walk")),
+           game_avg = hits/ab) %>% 
+    ungroup() %>% 
+    arrange(game_date) %>% 
+    group_by(isna = is.na(game_avg)) %>% 
+    mutate(avg = ifelse(isna, NA, round(cummean(game_avg), 3))) %>% 
+#    group_by(game_date) %>% 
+    mutate(avg_25_ab = rollmean(avg, k = 25, fill = NA))
+}
+
+
+mlb_colors <- teamcolors %>% 
+  select(name, league, primary, secondary, tertiary, quaternary) %>% 
+  filter(league == "mlb") %>% 
+  mutate(team_abbr = case_when(name == "Arizona Diamondbacks" ~ "AZ",
+                                 name == "Atlanta Braves" ~ "ATL",
+                                 name == "Baltimore Orioles" ~ "BAL",
+                                 name == "Boston Red Sox" ~ "BOS",
+                                 name == "Chicago Cubs" ~ "CHC",
+                                 name == "Chicago White Sox" ~ "CWS",
+                                 name == "Cincinnati Reds" ~ "CIN",
+                                 name == "Cleveland Indians" ~ "CLE",
+                                 name == "Colorado Rockies" ~ "COL",
+                                 name == "Detroit Tigers" ~ "DET",
+                                 name == "Houston Astros" ~ "HOU",
+                                 name == "Kansas City Royals" ~ "KC",
+                                 name == "Los Angeles Angels" ~ "LAA",
+                                 name == "Los Angeles Dodgers" ~ "LAD",
+                                 name == "Miami Marlins" ~ "MIA",
+                                 name == "Milwaukee Brewers" ~ "MIL",
+                                 name == "Minnesota Twins" ~ "MIN",
+                                 name == "New York Mets" ~ "NYM",
+                                 name == "New York Yankees" ~ "NYY",
+                                 name == "Oakland Athletics" ~ "OAK",
+                                 name == "Philadelphia Phillies" ~ "PHI",
+                                 name == "Pittsburgh Pirates" ~ "PIT",
+                                 name == "San Diego Padres" ~ "SD",
+                                 name == "San Francisco Giants" ~ "SF",
+                                 name == "Seattle Mariners" ~ "SEA",
+                                 name == "St. Louis Cardinals" ~ "STL",
+                                 name == "Tampa Bay Rays" ~ "TB",
+                                 name == "Texas Rangers" ~ "TEX",
+                                 name == "Toronto Blue Jays" ~ "TOR",
+                                 name == "Washington Nationals" ~ "WSH")
+         )
+
+
+
+```
+
+
+# Mike Trout
+
+```{r, include = F}
+trout_stats<- scrape_statcast_savant(start_date = "2019-03-28", end_date = "2019-09-29",
+                                      playerid = trout_id[1, 1], player_type = "batter")
+
+skim(trout_stats)
+```
+
+```{r, eda-trout-stats, include = F}
+predictors <- c("pitch_type", "release_speed", "effective_speed", "release_spin_rate", "pfx_x", "pfx_z")
+
+outcomes <- c("events")
+
+trout_sm <- trout_stats %>% 
+  select(matches(predictors) | matches(outcomes)) %>% 
+  mutate(pitch_cat = case_when(pitch_type %in% c("FA", "FF", "FC", "FS", "FT") ~ "Fastball",
+                               TRUE ~ "Off-Speed"),
+         ab_result = case_when(events %in% c("single", "double", "triple", "home_run") ~ "Hit", 
+                               events %in% c("hit_by_pitch", "sac_fly", "walk") ~ "BB/HBP/SF",
+                               is.na(events) ~ NA_character_,
+                               TRUE ~ "Out"))
+
+head(trout_sm, 20)
+```
+
+``` {r, eda-trout-plots}
+trout_sm %>% 
+  ggplot(aes(release_speed, effective_speed)) +
+  geom_point(alpha = 0.3, shape = 1, color = "#003263") + 
+  stat_cor() + 
+  geom_smooth(method = "lm", se = F, color = "#ba0021")
+
+trout_sm %>% 
+  ggplot(aes(release_speed, release_spin_rate)) +
+  geom_point(alpha = 0.3, shape = 1, color = "#003263") + 
+  stat_cor() + 
+  geom_smooth(method = "lm", se = F, color = "#ba0021")
+
+trout_sm %>% 
+  ggplot(aes(release_speed, release_spin_rate)) +
+  geom_point(shape = 1, aes(color = pitch_type)) + 
+  stat_cor() + 
+  geom_smooth(method = "lm", se = F, color = "#ba0021")
+
+trout_sm %>% 
+  ggplot(aes(release_speed, release_spin_rate)) +
+  geom_point(shape = 1, aes(color = pitch_cat)) + 
+  scale_color_paletteer_d("nbapalettes::warriors_city") +
+  stat_cor() + 
+  geom_smooth(method = "lm", se = F, color = "#FFA400FF")
+```
+
+## PCA
+
+```{r trout-pca, include = F}
+trout_pca <- trout_sm %>% 
+  mutate(across(where(is.numeric), scale)) %>% 
+  select(-effective_speed) %>% 
+  drop_na(2:6)
+
+pca_fit <- trout_pca %>% 
+  select(where(is.numeric)) %>% 
+  prcomp()
+
+trout_pca_results <- pca_fit %>% 
+  augment(trout_pca)
+```
+
+```{r trout-pca-plot}
+trout_pca_results %>% 
+  ggplot(aes(.fittedPC1, .fittedPC2, fill = ab_result)) + 
+  geom_point(size = 1.5, shape = 21) + 
+  scale_fill_paletteer_d("awtools::ppalette")
+
+trout_pca_results %>% 
+  ggplot(aes(.fittedPC1, .fittedPC2, fill = pitch_cat)) + 
+  geom_point(size = 1.5, shape = 21) + 
+  scale_fill_paletteer_d("awtools::ppalette")
+
+# trout_pca_results %>% 
+#   ggplot(aes(.fittedPC1, .fittedPC2, fill = events)) + 
+#   geom_point(size = 1.5, shape = 21) + 
+#   scale_fill_paletteer_d("awtools::ppalette")
+# 
+
+arrow_style <- arrow(
+  angle = 20, ends = "first", type = "closed", length = grid::unit(8, "pt")
+)
+
+pca_fit %>%
+  tidy(matrix = "rotation") %>%
+  pivot_wider(names_from = "PC", names_prefix = "PC", values_from = "value") %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_segment(xend = 0, yend = 0, arrow = arrow_style) +
+  geom_text(
+    aes(label = column),
+    hjust = 1, nudge_x = -0.02, 
+    color = "#904C2F"
+  ) +
+  xlim(-1.25, .5) + ylim(-.5, 1) +
+  coord_fixed()
+
+pca_fit %>%
+  tidy(matrix = "eigenvalues") %>%
+  ggplot(aes(PC, percent)) +
+  geom_col(fill = "#56B4E9", alpha = 0.8) +
+  scale_x_continuous(breaks = 1:9) +
+  scale_y_continuous(
+    labels = scales::percent_format(),
+    expand = expansion(mult = c(0, 0.01))
+  )
+```
+
+### Hits only
+
+```{r}
+pca_fit2 <- trout_pca %>% 
+  filter(ab_result == "Hit") %>% 
+  select(where(is.numeric)) %>% 
+  prcomp()
+
+trout_pca_results2 <- pca_fit2 %>% 
+  augment(trout_pca %>% filter(ab_result == "Hit"))
+
+trout_pca_results2 %>%
+  ggplot(aes(.fittedPC1, .fittedPC2, fill = events)) +
+  geom_point(size = 1.5, shape = 21) +
+  scale_fill_paletteer_d("awtools::ppalette")
+
+# trout_pca_results2 %>% 
+#   ggplot(aes(.fittedPC1, .fittedPC2, fill = ab_result)) + 
+#   geom_point(size = 1.5, shape = 21) + 
+#   scale_fill_paletteer_d("awtools::ppalette")
+
+trout_pca_results2 %>% 
+  ggplot(aes(.fittedPC1, .fittedPC2, fill = pitch_cat)) + 
+  geom_point(size = 1.5, shape = 21) + 
+  scale_fill_paletteer_d("awtools::ppalette")
+
+
+pca_fit2 %>%
+  tidy(matrix = "rotation") %>%
+  pivot_wider(names_from = "PC", names_prefix = "PC", values_from = "value") %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_segment(xend = 0, yend = 0, arrow = arrow_style) +
+  geom_text(
+    aes(label = column),
+    hjust = 1, nudge_x = -0.02, 
+    color = "#904C2F"
+  ) +
+  xlim(-1.25, .5) + ylim(-.5, 1) +
+  coord_fixed()
+
+pca_fit2 %>%
+  tidy(matrix = "eigenvalues") %>%
+  ggplot(aes(PC, percent)) +
+  geom_col(fill = "#56B4E9", alpha = 0.8) +
+  scale_x_continuous(breaks = 1:9) +
+  scale_y_continuous(
+    labels = scales::percent_format(),
+    expand = expansion(mult = c(0, 0.01))
+  )
+
+
