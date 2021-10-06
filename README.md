@@ -10,6 +10,7 @@ I would like to get more familiar with MLB and Global Soccer/Football Data.
 3. PCA based on AB results and Pitch Type.
 4. Soccer passing radar with ggperiodic.
 5. Shot locations in goal.
+6. Package - Not really sports related, but useful for R overall.
 
 
 
