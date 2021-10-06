@@ -1,0 +1,43 @@
+---
+title: "Soccer Data #2"
+author: "CS"
+date: "10/05/2021"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  fig.retina = 3,
+  fig.path = here::here("exports", "soccer", "Plots", "/"),
+  out.width = "100%"
+)
+pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr, patchwork, viridis)
+
+
+theme_set(theme_bw(base_size = 15))
+```
+
+```{r}
+p_load(ggperiodic, StatsBombR, SBpitch, soccermatics)
+
+comps <- FreeCompetitions()
+
+wwc <- comps %>% 
+  filter(competition_id == 72, season_id == 30) %>% 
+  FreeMatches()
+
+wwc_raw <-  StatsBombFreeEvents(MatchesDF = wwc) %>% 
+  allclean() %>% 
+  clean_names()
+
+uswnt <- wwc_raw %>% 
+  filter(team_name == "United States Women's")
+```
+
+```{r}
+# browseURL("https://github.com/eliocamp/ggperiodic")
+```
+
