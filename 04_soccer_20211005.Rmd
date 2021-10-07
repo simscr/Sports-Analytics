@@ -20,7 +20,7 @@ pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr, patchwork, vir
 theme_set(theme_bw(base_size = 15))
 ```
 
-```{r}
+```{r data, include = F}
 p_load(ggperiodic, StatsBombR, SBpitch, soccermatics)
 
 comps <- FreeCompetitions()
@@ -39,5 +39,76 @@ uswnt <- wwc_raw %>%
 
 ```{r}
 # browseURL("https://github.com/eliocamp/ggperiodic")
+```
+
+```{r summaries, include = F}
+uswnt_sm <- uswnt %>% 
+  select(team_name, type_name, play_pattern_name, player_name, pass_angle, pass_length)
+
+round_angle <- 30
+
+uswnt_sum <- uswnt_sm %>%
+  mutate(angle_round = round(pass_angle*180/pi/round_angle)*round_angle,
+         angle_true = pass_angle*180/pi,
+         pass_angle = pass_angle,
+         pass_length = case_when(pass_length >= 30 ~ 30,
+                                 TRUE ~ pass_length))
+
+uswnt_sonar <- uswnt_sum %>% 
+  filter(type_name == "Pass", # passes only
+         !play_pattern_name %in% c("From Corner", "From Free Kick", "From Throw In")) %>% # remove deadballs
+  group_by(player_name, team_name) %>% # group by player and team
+  mutate(total_passes = n()) %>% # add total passes and put before id
+  ungroup() %>% 
+  group_by(player_name, team_name, angle_round) %>% # group by these
+  mutate(passes_per_angle = n(),
+         pct_angle = (n()/total_passes)*100, .before = total_passes) %>% # add number per angle bracket and percent per angle bracket
+  ungroup() %>%
+  group_by(player_name, team_name) %>% # group by these
+  mutate(maxN = max(passes_per_angle), # pull out maximum n of passes per angle per player
+         angle_norm = passes_per_angle/maxN, .before = total_passes) %>% # calc final number per max number
+  ungroup() %>%
+  group_by(angle_round, player_name, team_name,total_passes) %>%
+  summarize(angle_norm = mean(angle_norm), # calc mean angle
+            pct_angle = mean(pct_angle), # calc mean pct per angle
+            distance = mean(pass_length), # calc mean pass length
+            distance = ifelse(distance>30, 30,distance)) # cap distance at 30m
+```
+
+```{r}
+uswnt_p <- uswnt_sum %>% 
+  mutate(test = angle_true + 180) %>% 
+  periodic(test = c(0, 360))
+```
+
+```{r}
+x <- seq(0, 360 - 10, by = 10)*pi/180
+y <- seq(-90, 90, by = 10)*pi/180
+
+Z <- expand.grid(x = x, y = y)
+Z$z <- with(Z, 1.2*sin(x)*0.4*sin(y*2) - 
+               0.5*cos(2*x)*0.5*sin(3*y) + 
+               0.2*sin(4*x)*0.45*cos(2*x))
+
+Z$x <- Z$x*180/pi
+Z$y <- Z$y*180/pi
+
+library(ggperiodic)
+#> 
+#> Attaching package: 'ggperiodic'
+#> The following object is masked from 'package:stats':
+#> 
+#>     filter
+Z2 <- periodic(Z, x = c(0, 360))
+
+ggplot(Z, aes(x, y, color = ..level..)) +
+  geom_contour(aes(z = z)) +
+  coord_polar()
+
+ggplot(Z2, aes(x, y, color = ..level..)) +
+  geom_contour(aes(z = z)) +
+  coord_polar()
+
+
 ```
 
