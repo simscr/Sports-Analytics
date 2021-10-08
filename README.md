@@ -21,8 +21,8 @@ I would like to get more familiar with MLB and Global Soccer/Football Data.
 
 https://eliocamp.github.io/codigo-r/en/2018/08/periodic-data-ggplot2-ggperiodic/
 
-
 https://github.com/eliocamp/ggperiodic
 
-
 https://www.datalorax.com/post/why-i-think-you-should-write-an-r-package/
+
+https://bookdown.org/yihui/rmarkdown-cookbook/custom-knit.html#custom-knit
