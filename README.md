@@ -12,7 +12,7 @@ I would like to get more familiar with MLB and Global Soccer/Football Data.
 5. Shot locations in goal.
 6. Package - Not really sports related, but useful for R overall. 
 
-    a. Functions I want to add: import, mod_sum, knit_to_location
+    a. Functions I want to add: import, mod_sum, knit_to_location, frequently used plots
 
 
 
