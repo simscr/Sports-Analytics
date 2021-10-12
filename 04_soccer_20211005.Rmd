@@ -5,6 +5,8 @@ date: "10/05/2021"
 output: html_document
 ---
 
+I can't figure out the {ggperiodic} error and there isn't anything on its GitHub page. Moving on for now.
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   warning = FALSE,
@@ -75,13 +77,13 @@ uswnt_sonar <- uswnt_sum %>%
             distance = ifelse(distance>30, 30,distance)) # cap distance at 30m
 ```
 
-```{r}
+```{r, eval = F}
 uswnt_p <- uswnt_sum %>% 
-  mutate(test = angle_true + 180) %>% 
-  periodic(test = c(0, 360))
+  mutate(test = round(angle_true, 5) + 180) %>% 
+  periodic()
 ```
 
-```{r}
+```{r, include = F}
 x <- seq(0, 360 - 10, by = 10)*pi/180
 y <- seq(-90, 90, by = 10)*pi/180
 
