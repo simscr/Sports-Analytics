@@ -11,7 +11,7 @@ I would like to get more familiar with MLB and Global Soccer/Football Data.
 4. Soccer passing radar with ggperiodic.
 5. Shot locations in goal.
 6. Revisit #3, but with {tidymodels}
-7. USMNT Players
+7. USMNT Players on transfermrkt
 
 
 
