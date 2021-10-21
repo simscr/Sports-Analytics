@@ -1,0 +1,47 @@
+---
+title: "Soccer Data #3"
+author: "CS"
+date: "10/20/2021"
+output: html_document
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  fig.retina = 3,
+  fig.path = here::here("exports", "soccer", "Plots", "/"),
+  out.width = "100%"
+)
+pacman::p_load(pacman, tidyverse, janitor, here, rio, job, skimr, patchwork, viridis)
+
+
+theme_set(theme_bw(base_size = 15) + theme(legend.position = "bottom", legend.direction = "horizontal"))
+```
+
+```{r data, include = F}
+p_load(StatsBombR, SBpitch, soccermatics)
+
+comps <- FreeCompetitions()
+
+afc <- comps %>% 
+  filter(competition_id == 2, season_id == 44) %>% 
+  FreeMatches()
+
+afc_raw <-  StatsBombFreeEvents(MatchesDF = afc) %>% 
+  allclean() %>% 
+  clean_names()
+
+afc_shot <- afc_raw %>% 
+  select(player_name, matches("shot")) %>% 
+  filter(!is.na(shot_statsbomb_xg))
+```
+
+```{r shot-location-plot, include = TRUE}
+afc_shot %>% 
+  filter(shot_outcome_name != "Off T") %>% 
+  ggplot(aes(shot_end_location_x, shot_end_location_y, color = shot_statsbomb_xg)) + 
+  geom_point()
+```
