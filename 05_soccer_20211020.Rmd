@@ -22,7 +22,7 @@ theme_set(theme_bw(base_size = 15) + theme(legend.position = "bottom", legend.di
 ```
 
 ```{r data, include = F}
-p_load(StatsBombR, SBpitch, soccermatics)
+p_load(StatsBombR, SBpitch, soccermatics, sportyR)
 
 comps <- FreeCompetitions()
 
@@ -36,12 +36,19 @@ afc_raw <-  StatsBombFreeEvents(MatchesDF = afc) %>%
 
 afc_shot <- afc_raw %>% 
   select(player_name, matches("shot")) %>% 
-  filter(!is.na(shot_statsbomb_xg))
+  filter(!is.na(shot_statsbomb_xg)) %>% 
+  filter(shot_outcome_name != "Off T")
+
+
 ```
 
 ```{r shot-location-plot, include = TRUE}
-afc_shot %>% 
-  filter(shot_outcome_name != "Off T") %>% 
-  ggplot(aes(shot_end_location_x, shot_end_location_y, color = shot_statsbomb_xg)) + 
-  geom_point()
+geom_soccer(league = "Premier") + 
+  ggplot(aes(shot_end_location_x, shot_end_location_y, color = shot_statsbomb_xg), data = afc_shot) + 
+  geom_point(data = afc_shot)
+```
+
+```{r shot-location-plot-2, include = TRUE}
+geom_soccer(league = "premier", touchline_length = 120, goal_line_length = 80) +
+  geom_point(data = afc_shot, aes(shot_end_location_x, shot_end_location_y))
 ```
