@@ -64,6 +64,7 @@ geom_soccer(league = "premier",
   theme(legend.title = element_blank(), legend.position = "right", 
         legend.direction = "vertical")
 
+
 cani_color_league_features('premier')
 
 ```
