@@ -5,6 +5,7 @@ date: "10/20/2021"
 output: html_document
 ---
 
+These are all of the shots from [Arsenal's Invincibles Season in 2003-2004](https://en.wikipedia.org/wiki/2003%E2%80%9304_Arsenal_F.C._season). The second plot shows the shots and their corresponding xG.
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -42,7 +43,7 @@ afc_shot <- afc_raw %>%
 
 ```
 
-```{r shot-location-plot, include = TRUE}
+```{r shot-location-plot, include = FALSE}
 geom_soccer(league = "Premier") + 
   ggplot(aes(shot_end_location_x, shot_end_location_y, color = shot_statsbomb_xg), data = afc_shot) + 
   geom_point(data = afc_shot)
@@ -50,21 +51,24 @@ geom_soccer(league = "Premier") +
 
 ```{r shot-location-plot-2, include = TRUE}
 geom_soccer(league = "premier", touchline_length = 120, goal_line_length = 80) +
-  geom_point(data = afc_shot, aes(shot_end_location_x-61, shot_end_location_y-40))
+  geom_point(data = afc_shot, aes(shot_end_location_x-61, shot_end_location_y-40), 
+             shape = 21, fill = "white", color = "black")
 ```
 
-```{r shot-location-plot-3, include = T}
+```{r shot-location-plot-3, include = TRUE}
 geom_soccer(league = "premier", 
             touchline_length = 120, goal_line_length = 80, 
             full_surf = F, rotate = T, grass_color = "black") +
   geom_point(data = afc_shot, 
              aes(y = -shot_end_location_x+60, x = shot_end_location_y-40, 
                  color = shot_statsbomb_xg), alpha = 0.4, size = 2) + 
-  scale_color_paletteer_c("ggthemes::Temperature Diverging") + 
-  theme(legend.title = element_blank(), legend.position = "right", 
-        legend.direction = "vertical")
+  scale_color_paletteer_c("ggthemes::Temperature Diverging", 
+                          guide = guide_colorbar(title = "xG", title.position = "top", 
+                                                 title.hjust = 0.5, 
+                                                 barwidth = 20, barheight = 0.5,)) +
+  theme(legend.position = c(0.5, 0.7), legend.direction = "horizontal", 
+        legend.text = element_text(color = "white"), legend.background = element_rect(fill = "black"),
+        legend.title = element_text(color = "white"))
 
-
-cani_color_league_features('premier')
 
 ```
