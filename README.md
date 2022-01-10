@@ -17,8 +17,8 @@ Data.
 2.  ~~Plot soccer passing as a polar geom_density plot.~~
 3.  ~~PCA based on AB results and Pitch Type.~~
 4.  ~~Soccer passing radar with ggperiodic.~~
-5.  Shot locations in goal.
-6.  Revisit #3, but with {tidymodels}
-7.  USMNT Players on transfermrkt
+5.  ~~Shot locations.~~
+6.  Revisit #3, but with [{tidymodels}](https://www.tidymodels.org/)
+7.  USMNT Players on [transfermrkt](https://www.transfermarkt.us/)
 
 ## Notes
